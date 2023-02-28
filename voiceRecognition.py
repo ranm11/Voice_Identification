@@ -2,7 +2,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import LSTM, GRU , Embedding, Conv1D , MaxPooling1D
 from tensorflow.keras.layers import Dropout
-from tensorflow.keras import Input
+from tensorflow.keras import Input , Model
 #import numpy as np
 #from playsound import playsound
 import sounddevice as sound
@@ -157,7 +157,7 @@ def build_LSTM_network(input_len):
 
 def build_TimeDomain_model(input_len):
     model = Sequential()
-    model.add(Conv1D(64, 3, activation='relu', input_shape=(input_len, 1 )))
+    model.add(Conv1D(16, 80, activation='relu', input_shape=(input_len, 1 )))
     model.add(MaxPooling1D(2))
     model.add(Dropout(0.25))
     model.add(LSTM(128, activation='tanh', return_sequences=True))
@@ -229,6 +229,20 @@ def build_Fully_connected_network_Keras_API(input_len):
     model.compile(loss='sparse_categorical_crossentropy', optimizer= 'rmsprop', metrics=['accuracy'])
     return model
 
+def build_TimeDomain_model_Keras_API(input_len):
+    inputs = Input(shape=(input_len,1),name="my_input")
+    layer1 = Conv1D(16, 80, activation='relu')(inputs)
+    layer1 = MaxPooling1D(2)(layer1)
+    layer1 = Dropout(0.25)(layer1)
+    layer1 = LSTM(128, activation='tanh', return_sequences=True) ( layer1)
+    layer1 = LSTM(128, activation='tanh')(layer1)
+    layer1 = Dropout(0.25)(layer1)
+    layer1 = Dense(64, activation='relu')(layer1)
+    output = Dense(2, activation='softmax')(layer1)
+    model = Model(inputs,output)
+    model.compile(loss='sparse_categorical_crossentropy', optimizer= 'rmsprop', metrics=['accuracy'])
+    return model
+
 
 
 ##### Main #####
@@ -264,7 +278,7 @@ mode = Mode.FULLY_CONNECTED
 if(mode == Mode.FULLY_CONNECTED):
     [x_train, x_train_phase, x_label, x_test, x_test_phase, x_label_test] = categorizeFreq(C, R, 0, 1, 1000 , Fs_d5,loadData);
     input_len = len(x_train[0])
-    model = build_FullyConnected_network(input_len)
+    model = build_Fully_connected_network_Keras_API(input_len)
     history = model.fit(x_train, x_label, epochs=85, validation_split=0.2, verbose=1)
     test_metrics = model.evaluate(x_test, x_label_test)
     result = model.predict(x_test)
@@ -283,7 +297,7 @@ if(mode == Mode.LSTM):
 if(mode == Mode.TIME_DOMAIN_ANALYSIS):
      [x_train, x_label, x_test, x_label_test] = categorizeTime(C, R, 0, 1, 1000,loadData )
      input_len = len(x_train[0])
-     model = build_TimeDomain_model(input_len)
+     model = build_TimeDomain_model_Keras_API(input_len)
      history = model.fit(x_train, x_label, epochs=85, validation_split=0.2, verbose=1)
      test_metrics = model.evaluate(x_test, x_label_test)
      result = model.predict(x_test)
